@@ -13,17 +13,17 @@ conda env create -f environment.yml
     ### Train
     python main_multi.py
 
-    ### Evaluate
+    ### Evaluation
     python main_multi.py --evaluate <MODEL-PATH>
     ```
  
  - Train and evaluate CIFAR10 dataset with only two classes
     - Note: Here we split CIFAR10 to two classes, one for animal, another for others
     ```
-    ### TrainN
+    ### Train
     python main_binary.py
 
-    ### Evaluate
+    ### Evaluation
     python main_binary.py --evaluate <MODEL-PATH>
     ```
 
