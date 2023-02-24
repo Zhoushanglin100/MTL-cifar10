@@ -17,9 +17,9 @@ import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
 
 from mtl_pytorch.trainer import Trainer
-from mobilenetv2 import mobilenet_v2
-from head import ClassificationHead
-from utils import *
+from mtl_pytorch.mobilenetv2 import mobilenet_v2
+from mtl_pytorch.head import ClassificationHead
+from utils.utils import *
 
 # -----------------------------------
 

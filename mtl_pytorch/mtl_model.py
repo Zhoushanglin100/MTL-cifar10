@@ -1,11 +1,10 @@
 from operator import mod
 import warnings
-from mtl_pytorch.layer_node import Conv2dNode, BN2dNode, BasicNode
+from layer_node import Conv2dNode, BN2dNode
 
 import torch.nn as nn
 import torch
-from mtl_pytorch.base_node import BasicNode
-from copy import deepcopy
+
 
 class mtl_model(nn.Module):
 

@@ -6,7 +6,7 @@ import torch.nn as nn
 import math
 import torch
 from mtl_model import mtl_model
-from mtl_pytorch.layer_node import Sequential, Conv2dNode, BN2dNode
+from layer_node import Sequential, Conv2dNode, BN2dNode
 
 
 def conv_bn(inp, oup, stride, task_list):

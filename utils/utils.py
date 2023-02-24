@@ -7,13 +7,11 @@
 import os
 import sys
 import time
-
-import torch.nn as nn
-import torch.nn.init as init
-
 import numpy as np
 
 import torch
+import torch.nn as nn
+import torch.nn.init as init
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
