@@ -31,7 +31,7 @@ conda env create -f environment.yml
 ## For multitask training
 
 ```
-### Train (force first 5 layers to to be shared for the two tasks. This can be changed.)
+### Train (force first 5 layers to be shared for the two tasks. This can be changed.)
 python main_mtl.py --pre-train --alter-train --post-train --shared 5
 
 ### Evaluation
