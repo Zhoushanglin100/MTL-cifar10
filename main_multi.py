@@ -10,7 +10,7 @@ import torchvision
 import torchvision.transforms as transforms
 
 from models import *
-from utils import progress_bar
+from utils.utils import progress_bar
 
 # ----------------------------------------------------------
 

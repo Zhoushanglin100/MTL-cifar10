@@ -7,6 +7,11 @@ import argparse
 
 from collections import OrderedDict
 from scipy.special import softmax
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy import spatial
+from graphviz import Digraph
 
 import torch
 import torch.nn as nn
@@ -107,6 +112,118 @@ def main(args):
                         policy_update_iters=100)
 
     # ==================================
+    if args.evaluate:
+        ckpt = torch.load(args.evaluate)
+        mtlmodel.load_state_dict(ckpt['state_dict'], strict=False)
+
+        sd = mtlmodel.state_dict()
+        mtlmodel.load_state_dict(sd)
+
+        trainer.validate('mtl', hard=True)
+
+        # ---------------------------
+        ## policy visualization
+        if args.visualize:
+            policy_list = {"multiclass": [], "binary": []}
+            for name, param in mtlmodel.named_parameters():
+                if 'policy' in name and not torch.eq(param, torch.tensor([0., 0., 0.]).cuda()).all():
+                    policy = param.data.cpu().detach().numpy()
+                    distribution = softmax(policy, axis=-1)
+                    if 'multiclass' in name:
+                        policy_list['multiclass'].append(distribution)
+                    elif 'binary' in name:
+                        policy_list['binary'].append(distribution)
+            print(policy_list)
+
+            spectrum_list = []
+            ylabels = {'multiclass': 'multi-class',
+                       'binary': "binary"} 
+            tickSize = 15
+            labelSize = 16
+            for task in tasks:
+                policies = policy_list[task]    
+                spectrum = np.stack([policy for policy in policies])
+                spectrum = np.repeat(spectrum[np.newaxis,:,:],1,axis=0)
+                spectrum_list.append(spectrum)
+                
+                plt.figure(figsize=(10,5))
+                plt.xlabel('Layer No.', fontsize=labelSize)
+                plt.xticks(fontsize=tickSize)
+                plt.ylabel(ylabels[task], fontsize=labelSize)
+                plt.yticks(fontsize=tickSize)
+                
+                ax = plt.subplot()
+                im = ax.imshow(spectrum.T)
+                ax.set_yticks(np.arange(3))
+                ax.set_yticklabels(['shared', 'specific', 'skip'])
+
+                divider = make_axes_locatable(ax)
+                cax = divider.append_axes("right", size="2%", pad=0.05)
+
+                cb = plt.colorbar(im, cax=cax)
+                cb.ax.tick_params(labelsize=tickSize)
+                plt.savefig(f"spect_{task}.png")
+                plt.close()
+
+            ### plot task correlation
+            policy_list = {"multiclass": [], "binary": []}
+            for name, param in mtlmodel.named_parameters():
+                if 'policy' in name and not torch.eq(param, torch.tensor([0., 0., 0.]).cuda()).all():
+                    policy = param.data.cpu().detach().numpy()
+                    distribution = softmax(policy, axis=-1)
+                    if 'multiclass' in name:
+                        policy_list['multiclass'].append(distribution)
+                    elif 'binary' in name:
+                        policy_list['binary'].append(distribution)
+            policy_array = np.array([np.array(policy_list['multiclass']).ravel(), 
+                                     np.array(policy_list['binary']).ravel()])
+            sim = np.zeros((4,4))
+            for i in range(len(tasks)):
+                for j in range(len(tasks)):
+                    sim[i,j] = 1 - spatial.distance.cosine(policy_array[i,:], policy_array[j,:])
+
+            mpl.rc('image', cmap='Blues')
+            tickSize = 15
+            plt.figure(figsize=(10,10))
+            plt.xticks(fontsize=tickSize, rotation='vertical')
+            plt.yticks(fontsize=tickSize)
+            ax = plt.subplot()
+            im = ax.imshow(sim)
+            ax.set_xticks(np.arange(2))
+            ax.set_yticks(np.arange(2))
+            ax.set_xticklabels(['multiclass', 'binary'])
+            ax.set_yticklabels(['multiclass', 'binary'])
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="4%", pad=0.05)
+            cb = plt.colorbar(im, cax=cax,ticks=[1,0.61])
+            cb.ax.set_yticklabels(['high', 'low']) 
+            cb.ax.tick_params(labelsize=tickSize)
+            plt.savefig("task_cor")
+            plt.close()
+
+            ### Show Policy (for test)
+            dot = Digraph(comment='Policy')
+            # make nodes
+            layer_num = len(policy_list['multiclass'])
+            for i in range(layer_num):
+                with dot.subgraph(name='cluster_L'+str(i),node_attr={'rank':'same'}) as c:
+                    c.attr(rankdir='LR')
+                    c.node('L'+str(i)+'B0', 'Shared')
+                    c.node('L'+str(i)+'B1', 'Specific')
+                    c.node('L'+str(i)+'B2', 'Skip')
+            
+            # make edges
+            colors = {'multiclass': 'blue', 'binary': 'red'}
+            for task in tasks:
+                for i in range(layer_num-1):
+                    prev = np.argmax(policy_list[task][i])
+                    nxt = np.argmax(policy_list[task][i+1])
+                    dot.edge('L'+str(i)+'B'+str(prev), 'L'+str(i+1)+'B'+str(nxt), color=colors[task])
+            # dot.render('Best.gv', view=True)  
+            dot.render('Best.gv', view=True)  
+        return
+    # ==================================
+
     ### Train
     checkpoint = 'checkpoint/'
     if not os.path.exists(checkpoint):
@@ -179,7 +296,7 @@ def main(args):
         # ----------------
         ### Step 4: post train from scratch
         print(">>>>>>>> Post-train <<<<<<<<<<")
-        loss_lambda = {'multiclass': 10, 'binary': 1}
+        loss_lambda = {'multiclass': 5, 'binary': 1}
         trainer.post_train(iters=args.post_iters, lr=args.post_lr,
                             decay_lr_freq=args.decay_lr_freq, decay_lr_rate=0.5,
                             loss_lambda=loss_lambda,
@@ -210,8 +327,10 @@ if __name__ == '__main__':
     parser.add_argument('--decay-lr-freq', type=float, default=2000, 
                         help='post-train learning rate decay frequency')
 
-    parser.add_argument('--save-dir', type=str, default='avg', help="save the model")
-    parser.add_argument('--evaluate', type=str, help="Model path for evaulation")
+    parser.add_argument('--save-dir', type=str, default='multi', help="save the model")
+    parser.add_argument('--evaluate', type=str, help="Model path for evalation")
+    parser.add_argument('--visualize', action='store_true', default=False, 
+                        help="visualize result when evalation")
 
     parser.add_argument('--pretrain', action='store_true', default=False, 
                         help='whether to run pre-train part')

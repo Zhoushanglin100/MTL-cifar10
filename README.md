@@ -28,9 +28,17 @@ conda env create -f environment.yml
     ```
 
 
-## For multitask training (TODO)
+## For multitask training
 
 ```
 python main_mtl.py --pre-train --alter-train --post-train
 ```
  
+## Result
+
+| Model             | Acc.        |
+| ----------------- | ----------- |
+| Multi-Class       | 93.99%      |
+| Binary            | 98.96%      |
+| ----------------- | ----------- |
+| Multi-Task        | 92.76% & 98.52% |

@@ -15,7 +15,6 @@ import torch.nn.init as init
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
-
 # -------------------------------------------
 
 def get_mean_and_std(dataset):

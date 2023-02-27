@@ -12,7 +12,7 @@ import argparse
 import numpy as np
 
 from models import *
-from utils import progress_bar
+from utils.utils import progress_bar
 
 # --------------------------------
 

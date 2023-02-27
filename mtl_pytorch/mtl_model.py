@@ -1,6 +1,6 @@
 from operator import mod
 import warnings
-from layer_node import Conv2dNode, BN2dNode
+from .layer_node import Conv2dNode, BN2dNode
 
 import torch.nn as nn
 import torch
