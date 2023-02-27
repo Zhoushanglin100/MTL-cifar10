@@ -57,3 +57,9 @@ Checkpoints can be downloaded [here](https://drive.google.com/drive/folders/1NJl
 | First 0 layers shared  | 90.91%           | 96.39%      |
 | First 5 layers shared  | 92.76%           | 98.52%      |
 | First 15 layers shared | 92.61%           | 98.49%      |
+
+
+## Reference
+
+- [MobileNet Model](https://github.com/kuangliu/pytorch-cifar)
+- [AutoMTL paper and code](https://github.com/zhanglijun95/AutoMTL)
