@@ -14,7 +14,7 @@ conda env create -f environment.yml
     python main_multi.py
 
     ### Evaluation
-    python main_multi.py --evaluate <MODEL-PATH>
+    python main_multi.py --evaluate <CKPT-PATH>
     ```
  
  - Train and evaluate CIFAR10 dataset with only two classes
@@ -24,21 +24,36 @@ conda env create -f environment.yml
     python main_binary.py
 
     ### Evaluation
-    python main_binary.py --evaluate <MODEL-PATH>
+    python main_binary.py --evaluate <CKPT-PATH>
     ```
 
 
 ## For multitask training
 
 ```
+### Train
 python main_mtl.py --pre-train --alter-train --post-train
+
+### Evaluation
+python main_mtl.py --evaluate <CKPT-PATH> --visualize
 ```
  
 ## Result
+
+Checkpoints can be downloaded [here](https://drive.google.com/drive/folders/1NJlXeACgj_geiC6xn9JdZ_mBD9qrN6Od?usp=share_link).
+
+### Single Model
 
 | Model             | Acc.        |
 | ----------------- | ----------- |
 | Multi-Class       | 93.99%      |
 | Binary            | 98.96%      |
-| ----------------- | ----------- |
-| Multi-Task        | 92.76% & 98.52% |
+
+
+### Multi-task Model
+
+| Model                  | Multi-class Acc. | Binary Acc. |
+| ---------------------  | ---------------- | ----------- |
+| First 0 layers shared  | 90.91%           | 96.39%      |
+| First 5 layers shared  | 92.76%           | 98.52%      |
+| First 15 layers shared | 92.61%           | 98.49%      |

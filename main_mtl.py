@@ -182,24 +182,24 @@ def main(args):
                 for j in range(len(tasks)):
                     sim[i,j] = 1 - spatial.distance.cosine(policy_array[i,:], policy_array[j,:])
 
-            mpl.rc('image', cmap='Blues')
-            tickSize = 15
-            plt.figure(figsize=(10,10))
-            plt.xticks(fontsize=tickSize, rotation='vertical')
-            plt.yticks(fontsize=tickSize)
-            ax = plt.subplot()
-            im = ax.imshow(sim)
-            ax.set_xticks(np.arange(2))
-            ax.set_yticks(np.arange(2))
-            ax.set_xticklabels(['multiclass', 'binary'])
-            ax.set_yticklabels(['multiclass', 'binary'])
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="4%", pad=0.05)
-            cb = plt.colorbar(im, cax=cax,ticks=[1,0.61])
-            cb.ax.set_yticklabels(['high', 'low']) 
-            cb.ax.tick_params(labelsize=tickSize)
-            plt.savefig("task_cor")
-            plt.close()
+            # mpl.rc('image', cmap='Blues')
+            # tickSize = 15
+            # plt.figure(figsize=(10,10))
+            # plt.xticks(fontsize=tickSize, rotation='vertical')
+            # plt.yticks(fontsize=tickSize)
+            # ax = plt.subplot()
+            # im = ax.imshow(sim)
+            # ax.set_xticks(np.arange(2))
+            # ax.set_yticks(np.arange(2))
+            # ax.set_xticklabels(['multiclass', 'binary'])
+            # ax.set_yticklabels(['multiclass', 'binary'])
+            # divider = make_axes_locatable(ax)
+            # cax = divider.append_axes("right", size="4%", pad=0.05)
+            # cb = plt.colorbar(im, cax=cax,ticks=[1,0.61])
+            # cb.ax.set_yticklabels(['high', 'low']) 
+            # cb.ax.tick_params(labelsize=tickSize)
+            # plt.savefig("task_cor")
+            # plt.close()
 
             ### Show Policy (for test)
             dot = Digraph(comment='Policy')
@@ -220,7 +220,7 @@ def main(args):
                     nxt = np.argmax(policy_list[task][i+1])
                     dot.edge('L'+str(i)+'B'+str(prev), 'L'+str(i+1)+'B'+str(nxt), color=colors[task])
             # dot.render('Best.gv', view=True)  
-            dot.render('Best.gv', view=True)  
+            dot.render('Best', view=False)  
         return
     # ==================================
 
@@ -270,7 +270,7 @@ def main(args):
                     name_list['binary'].append(name)
 
 
-        shared = 5
+        shared = args.shared
         sample_policy_dict = OrderedDict()
         for task in tasks:
             count = 0
@@ -324,6 +324,8 @@ if __name__ == '__main__':
                         help='pre-train learning rate')
     parser.add_argument('--post-lr', type=float, default=0.01, 
                         help='post-train learning rate')
+    parser.add_argument('--shared', type=int, default=5, 
+                        help="first few number of layers force to share")
     parser.add_argument('--decay-lr-freq', type=float, default=2000, 
                         help='post-train learning rate decay frequency')
 

@@ -263,8 +263,8 @@ class Trainer():
         if reload is not None and savePath is not None:
             if 'post_train' in reload:
                 optimizer.load_state_dict(state['optimizer'])
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=decay_lr_freq, gamma=decay_lr_rate)
-        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iters)
+        # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=decay_lr_freq, gamma=decay_lr_rate)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iters)
 
         for i in range(start, iters):
             # Step 2: Train the network with policy
