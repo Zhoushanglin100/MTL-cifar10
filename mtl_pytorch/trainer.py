@@ -41,8 +41,8 @@ class Trainer():
             writer = SummaryWriter(log_dir=writerPath+'pre_train_all/')
         else:
             writer = None
-        # optimizer = torch.optim.SGD(self.model.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, betas=(0.5, 0.999), weight_decay=0.0001)
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
+        # optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, betas=(0.5, 0.999), weight_decay=0.0001)
         
         start = 0
         if reload is not None and savePath is not None:
@@ -50,7 +50,8 @@ class Trainer():
             self.model.load_state_dict(state['state_dict'])
             # optimizer.load_state_dict(state['optimizer'])
             start = state['iter'] + 1
-        
+        # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=decay_lr_freq, gamma=decay_lr_rate)
+
         for i in range(start, iters):
             ### Pre-train all weights
             if task_iters is None:
@@ -217,7 +218,7 @@ class Trainer():
                     elif isinstance(loss_lambda, float):
                         modelName = 'alter_train_with_reg_' + str(loss_lambda).split('.')[1]
                     self.save_model(state, modelName, savePath)
-                    
+
             ################ delete if not needed ############
             if (i+1) % 10000 == 0:
                 for g in policy_op.param_groups:
@@ -263,8 +264,8 @@ class Trainer():
         if reload is not None and savePath is not None:
             if 'post_train' in reload:
                 optimizer.load_state_dict(state['optimizer'])
-        # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=decay_lr_freq, gamma=decay_lr_rate)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iters)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=decay_lr_freq, gamma=decay_lr_rate)
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iters)
 
         for i in range(start, iters):
             # Step 2: Train the network with policy

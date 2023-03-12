@@ -54,9 +54,9 @@ Checkpoints can be downloaded [here](https://drive.google.com/drive/folders/1NJl
 
 | Model                  | Multi-class Acc. | Binary Acc. |
 | ---------------------  | ---------------- | ----------- |
-| First 0 layers shared  | 90.91%           | 96.39%      |
-| First 5 layers shared  | 92.76%           | 98.52%      |
-| First 15 layers shared | 92.61%           | 98.49%      |
+| First 0 layers shared  | 90.50%           | 98.09%      |
+| First 5 layers shared  | 92.53%           | 98.32%      |
+| First 15 layers shared | 90.34%           | 98.34%      |
 
 
 ## Reference

@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
 
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 
 from mtl_pytorch.trainer import Trainer
 from mtl_pytorch.mobilenetv2 import mobilenet_v2
@@ -35,9 +35,9 @@ def main(args):
     print("---------------")
 
     torch.backends.cudnn.benchmark = True
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    # random.seed(args.seed)
+    # np.random.seed(args.seed)
+    # torch.manual_seed(args.seed)
 
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -124,6 +124,13 @@ def main(args):
         # ---------------------------
         ## policy visualization
         if args.visualize:
+            
+            name = args.evaluate.split("/")[-1].split(".")[0]
+            vis_savepath = f"result/{name}"
+            if not os.path.exists(vis_savepath):
+                os.makedirs(vis_savepath)
+            print(f"All visualization save to {vis_savepath}")
+
             policy_list = {"multiclass": [], "binary": []}
             for name, param in mtlmodel.named_parameters():
                 if 'policy' in name and not torch.eq(param, torch.tensor([0., 0., 0.]).cuda()).all():
@@ -162,7 +169,7 @@ def main(args):
 
                 cb = plt.colorbar(im, cax=cax)
                 cb.ax.tick_params(labelsize=tickSize)
-                plt.savefig(f"spect_{task}.png")
+                plt.savefig(f"{vis_savepath}/spect_{task}.png")
                 plt.close()
 
             ### plot task correlation
@@ -198,7 +205,7 @@ def main(args):
             # cb = plt.colorbar(im, cax=cax,ticks=[1,0.61])
             # cb.ax.set_yticklabels(['high', 'low']) 
             # cb.ax.tick_params(labelsize=tickSize)
-            # plt.savefig("task_cor")
+            # plt.savefig(f"{vis_savepath}/task_cor")
             # plt.close()
 
             ### Show Policy (for test)
@@ -220,7 +227,7 @@ def main(args):
                     nxt = np.argmax(policy_list[task][i+1])
                     dot.edge('L'+str(i)+'B'+str(prev), 'L'+str(i+1)+'B'+str(nxt), color=colors[task])
             # dot.render('Best.gv', view=True)  
-            dot.render('Best', view=False)  
+            dot.render(f'{vis_savepath}/Best', view=False)  
         return
     # ==================================
 
@@ -248,9 +255,10 @@ def main(args):
         loss_lambda = {'multiclass': 1, 'binary': 1, 'policy': 0.0005}
         trainer.alter_train_with_reg(iters=args.alter_iters, 
                                      policy_network_iters=(50,200), 
-                                     policy_lr=0.01, network_lr=0.0001,
+                                     policy_lr=0.01, network_lr=0.001,
                                      loss_lambda=loss_lambda,
-                                     savePath=savepath, writerPath=savepath)
+                                     savePath=savepath, writerPath=savepath,
+                                     reload=args.pretrain_model)
 
     # ----------------
     if args.post_train:
@@ -259,8 +267,13 @@ def main(args):
         policy_list = {'multiclass': [], 'binary': []}
         name_list = {'multiclass': [], 'binary': []}
 
+        if args.alter_model != None:
+            print("!! Load alter-train model")
+            state = torch.load(savepath + args.alter_model)
+            mtlmodel.load_state_dict(state['state_dict'])
+
         for name, param in mtlmodel.named_parameters():
-            if 'policy' in name :
+            if 'policy' in name and not torch.eq(param, torch.tensor([0., 0., 0.]).cuda()).all():
                 print(name)
                 if 'multiclass' in name:
                     policy_list['multiclass'].append(param.data.cpu().detach().numpy())
@@ -268,7 +281,6 @@ def main(args):
                 elif 'binary' in name:
                     policy_list['binary'].append(param.data.cpu().detach().numpy())
                     name_list['binary'].append(name)
-
 
         shared = args.shared
         sample_policy_dict = OrderedDict()
@@ -291,17 +303,18 @@ def main(args):
 
         sample_path = savepath
         sample_state = {'state_dict': sample_policy_dict}
-        torch.save(sample_state, sample_path + 'sample_policy.model')
+        torch.save(sample_state, sample_path + f'sample_policy{args.ext}.model')
 
         # ----------------
         ### Step 4: post train from scratch
         print(">>>>>>>> Post-train <<<<<<<<<<")
-        loss_lambda = {'multiclass': 5, 'binary': 1}
+        loss_lambda = {'multiclass': 2, 'binary': 1}
+        print(loss_lambda)
         trainer.post_train(iters=args.post_iters, lr=args.post_lr,
                             decay_lr_freq=args.decay_lr_freq, decay_lr_rate=0.5,
                             loss_lambda=loss_lambda,
                             savePath=savepath, writerPath=savepath,
-                            reload='sample_policy.model',
+                            reload=f'sample_policy{args.ext}.model',
                             ext=args.ext)
 
 # --------------------------------------------------------------
@@ -314,20 +327,6 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--batch-size', type=int, default=128, 
                         help="cifar10: train: 50k; test: 10k")
-    parser.add_argument('--pretrain-iters', type=int, default=8000, 
-                        help='#iterations for pre-training, default: [8k: bz=128]')
-    parser.add_argument('--alter-iters', type=int, default=6000, 
-                        help='#iterations for alter-train, default: 20000')
-    parser.add_argument('--post-iters', type=int, default=30000, 
-                        help='#iterations for post-train, default: 30000')
-    parser.add_argument('--lr', type=float, default=0.01, 
-                        help='pre-train learning rate')
-    parser.add_argument('--post-lr', type=float, default=0.01, 
-                        help='post-train learning rate')
-    parser.add_argument('--shared', type=int, default=5, 
-                        help="first few number of layers force to share")
-    parser.add_argument('--decay-lr-freq', type=float, default=2000, 
-                        help='post-train learning rate decay frequency')
 
     parser.add_argument('--save-dir', type=str, default='multi', help="save the model")
     parser.add_argument('--evaluate', type=str, help="Model path for evalation")
@@ -336,10 +335,30 @@ if __name__ == '__main__':
 
     parser.add_argument('--pretrain', action='store_true', default=False, 
                         help='whether to run pre-train part')
+    parser.add_argument('--pretrain-iters', type=int, default=8000, 
+                        help='#iterations for pre-training, default: [8k: bz=128]')
+    parser.add_argument('--lr', type=float, default=0.01, 
+                        help='pre-train learning rate')
+
     parser.add_argument('--alter-train', action='store_true', default=False, 
                         help='whether to run alter-trian part')
+    parser.add_argument('--pretrain-model', type=str, default=None, 
+                        help="pretrain model in alter-train")
+    parser.add_argument('--alter-iters', type=int, default=8000, 
+                        help='#iterations for alter-train, default: 20000')
+
     parser.add_argument('--post-train', action='store_true', default=False, 
                         help='whether to run post-train part')
+    parser.add_argument('--alter-model', type=str, default=None, 
+                        help="alter-train model in post-train")
+    parser.add_argument('--post-iters', type=int, default=30000, 
+                        help='#iterations for post-train, default: 30000')
+    parser.add_argument('--post-lr', type=float, default=0.01, 
+                        help='post-train learning rate')
+    parser.add_argument('--decay-lr-freq', type=float, default=2000, 
+                        help='post-train learning rate decay frequency')
+    parser.add_argument('--shared', type=float, default=5, 
+                        help='number of layers force to share during sample policy')
 
     parser.add_argument('--ext', type=str, default='', 
                         help="extension for save the model")
